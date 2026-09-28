@@ -68,7 +68,7 @@ Or reference the kit by its published OCI tag once you have pushed it (see
 [Publishing](#publishing)):
 
 ```sh
-sbx --cloud run docker/sbx-kit-shell --kit docker.io/ajeetraina/sbx-kit-docker-scout:latest
+sbx --cloud run docker/sbx-kit-shell --kit docker.io/ajeetraina777/sbx-kit-docker-scout:latest
 ```
 
 ## Sign-in
@@ -162,8 +162,8 @@ Push both platforms in one build so the tag serves a proper multi-arch index:
 ```sh
 docker buildx build . -f sbx-kit-docker-scout.yaml \
   --platform linux/amd64,linux/arm64 --push \
-  -t docker.io/ajeetraina/sbx-kit-docker-scout:0.1.0 \
-  -t docker.io/ajeetraina/sbx-kit-docker-scout:latest
+  -t docker.io/ajeetraina777/sbx-kit-docker-scout:0.1.0 \
+  -t docker.io/ajeetraina777/sbx-kit-docker-scout:latest
 ```
 
 To pin a specific Scout release into the published image, add
