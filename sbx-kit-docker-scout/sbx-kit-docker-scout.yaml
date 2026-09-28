@@ -1,0 +1,100 @@
+# syntax=docker/sandbox-kit:3
+schemaVersion: "3"
+kind: mixin
+displayName: Docker Scout CLI
+author: "Ajeet Singh Raina"
+description: >-
+  Adds the Docker Scout CLI plugin (docker scout) to any agent sandbox as a
+  portable overlay. It ships the docker-scout binary in the system CLI plugins
+  directory, opens egress to the registries and the Scout API that scans need,
+  and runs `docker scout version` on startup as a health check.
+sourceUrl: https://github.com/docker/scout-cli
+
+# The kit's own release version (org.opencontainers.image.version). It is not
+# tied to scoutVersion: that arg defaults to `latest`, which is not a valid
+# version string, and the two version lines answer different questions anyway
+# (which kit build vs which Scout release it installs).
+version: "0.1.0"
+
+args:
+  scoutVersion:
+    default: "latest"
+    pattern: '^(latest|v?[0-9]+\.[0-9]+\.[0-9]+)$'
+    description: Docker Scout CLI release to install (latest, or a semver like 1.18.3)
+    buildArg: SCOUT_VERSION
+
+# No `provides`. The default install is floating (`latest`), so this kit cannot
+# honestly claim a specific `docker-scout@<version>`. In v3 an unversioned or
+# `latest` provide is not version-shaped and will not satisfy a lower-bound
+# constraint, so we offer nothing matchable rather than assert a version the
+# content may not have. Pin scoutVersion and add a provides if you need one.
+
+# No `requires`. `docker scout` runs as a docker CLI plugin, so it needs the
+# docker CLI on the composed base, but `requires` is a hard, closed-set
+# precondition on EVERY composition and there is no universal package name for
+# docker (deb/ on Debian, apk/ on Alpine, or a template that bakes it outside
+# any package database). Declaring one would make this kit refuse to compose on
+# bases that would in fact run the plugin perfectly well. The startup check
+# below probes for docker and prints an actionable message instead. Target a
+# docker-capable base, for example the shell-docker template.
+
+capabilities:
+  # Egress the running agent needs to sign in and to scan images. This is the
+  # `runtime` phase only: the plugin itself is installed at build time (see the
+  # dockerfile), so the install hosts (raw.githubusercontent.com, github.com,
+  # api.github.com and the GitHub release asset CDN) are reached by `docker
+  # buildx build`, not by the sandbox, and do not belong in this policy.
+  - type: com.docker.sandbox/network-policy@1
+    config:
+      runtime:
+        allow:
+          # Scout's own API: CVE enrichment, policy evaluation, recommendations.
+          - api.scout.docker.com
+          # Docker Hub API and the PAT -> JWT sign-in exchange that docker login
+          # performs. Scout reads the resulting token from ~/.docker/config.json.
+          - hub.docker.com
+          - auth.docker.io
+          # Docker Hub registry and its blob CDN, for scanning docker.io images.
+          - registry-1.docker.io
+          - production.cloudflare.docker.com
+          # Docker Hardened Images registry, for scanning dhi.io images.
+          - dhi.io
+
+  # `docker scout version` on startup as a health check. Runs as the agent user
+  # because that is who invokes docker in the session. The hook environment is
+  # deny-by-default, so every variable docker and its update check may read is
+  # declared: DOCKER_HOST/DOCKER_CONFIG for the CLI, HOME/PATH to find config
+  # and the plugin, and the proxy and CA variables so any outbound check goes
+  # through the sandbox proxy and trusts its certificate.
+  - type: com.docker.sandbox/lifecycle@1
+    config:
+      startup:
+        - command: |
+            if ! command -v docker >/dev/null 2>&1; then
+              echo "[docker-scout kit] docker CLI not found on this base."
+              echo "[docker-scout kit] 'docker scout' needs the docker CLI. Use a docker-capable base, for example the shell-docker template."
+              echo "[docker-scout kit] The docker-scout plugin is installed at /usr/local/lib/docker/cli-plugins/docker-scout and can also be run directly."
+              exit 0
+            fi
+            echo "[docker-scout kit] docker scout version:"
+            docker scout version
+          user: agent
+          env:
+            - HOME
+            - PATH
+            - DOCKER_HOST
+            - DOCKER_CONFIG
+            - HTTP_PROXY
+            - HTTPS_PROXY
+            - NO_PROXY
+            - http_proxy
+            - https_proxy
+            - no_proxy
+            - SSL_CERT_FILE
+            - SSL_CERT_DIR
+            - CURL_CA_BUNDLE
+          description: Report docker scout version as a startup health check
+
+  - type: com.docker.sandbox/agent-context@1
+    config:
+      contentFile: ./scout-context.md
