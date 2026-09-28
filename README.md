@@ -39,13 +39,13 @@ base such as `docker/sbx-kit-shell` (or `docker/sbx-kit-codex`,
 
 ```sh
 # Layer the kit onto the v3 shell workload, in the current directory.
-sbx run docker/sbx-kit-shell --kit ./sbx-kit-docker-scout .
+sbx run docker/sbx-kit-shell --kit . .
 
 # Pin a specific Scout version.
-sbx run docker/sbx-kit-shell --kit ./sbx-kit-docker-scout --kit-arg scoutVersion=1.24.0 .
+sbx run docker/sbx-kit-shell --kit . --kit-arg scoutVersion=1.24.0 .
 
 # Layer it onto a coding agent instead of the shell.
-sbx run docker/sbx-kit-codex --kit ./sbx-kit-docker-scout .
+sbx run docker/sbx-kit-codex --kit . .
 ```
 
 Inside the sandbox:
@@ -61,14 +61,14 @@ docker scout cves registry://dhi.io/node:22-alpine3.24
 Cloud sandboxes take the same flags:
 
 ```sh
-sbx --cloud run docker/sbx-kit-shell --kit ./sbx-kit-docker-scout
+sbx --cloud run docker/sbx-kit-shell --kit .
 ```
 
 Or reference the kit by its published OCI tag once you have pushed it (see
 [Publishing](#publishing)):
 
 ```sh
-sbx --cloud run shell --kit docker.io/ajeetraina/sbx-kit-docker-scout:latest
+sbx --cloud run docker/sbx-kit-shell --kit docker.io/ajeetraina/sbx-kit-docker-scout:latest
 ```
 
 ## Sign-in
@@ -144,10 +144,10 @@ Validate and build locally:
 
 ```sh
 # Preview how the kit resolves.
-sbx kit inspect ./sbx-kit-docker-scout
+sbx kit inspect .
 
 # Build to an OCI layout and run the conformance suite.
-docker buildx build ./sbx-kit-docker-scout -f ./sbx-kit-docker-scout/sbx-kit-docker-scout.yaml \
+docker buildx build . -f sbx-kit-docker-scout.yaml \
   -t sbx-kit-docker-scout:latest \
   --output type=oci,dest=/tmp/sbx-kit-docker-scout-layout,tar=false
 kit-tck validate --layout /tmp/sbx-kit-docker-scout-layout latest
@@ -160,7 +160,7 @@ v3 kits are published as OCI images with `docker buildx build --push`, not with
 Push both platforms in one build so the tag serves a proper multi-arch index:
 
 ```sh
-docker buildx build ./sbx-kit-docker-scout -f ./sbx-kit-docker-scout/sbx-kit-docker-scout.yaml \
+docker buildx build . -f sbx-kit-docker-scout.yaml \
   --platform linux/amd64,linux/arm64 --push \
   -t docker.io/ajeetraina/sbx-kit-docker-scout:0.1.0 \
   -t docker.io/ajeetraina/sbx-kit-docker-scout:latest
