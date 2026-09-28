@@ -7,7 +7,16 @@
 # base's package manager. This is why the install happens here at build time
 # rather than in a create-time hook: the plugin is baked into the kit, so every
 # sandbox has it the instant it starts, with no per-create download.
-FROM debian:trixie-slim AS build
+#
+# The builder is a Docker Hardened Image (dhi.io/debian-base:trixie-dev), the
+# base the sandbox-kit-spec RECIPES.md recommends for a mixin overlay build
+# stage. Nothing from it reaches the kit: the final stage is scratch and copies
+# only the docker-scout binary, so the builder choice is about supply-chain
+# hygiene of the build itself, not the shipped artifact. Because it is a DHI
+# image, `docker buildx build` must be able to pull from dhi.io, so run
+# `docker login dhi.io` first (or supply registry creds in CI).
+ARG BUILDER_IMAGE=dhi.io/debian-base:trixie-dev
+FROM ${BUILDER_IMAGE} AS build
 
 # Wired to the scoutVersion kit arg via buildArg (see the descriptor).
 ARG SCOUT_VERSION=latest

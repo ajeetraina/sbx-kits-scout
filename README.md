@@ -140,9 +140,19 @@ BuildKit frontend.
   overlay.
 - `scout-context.md` is the instruction file the agent reads.
 
+The build stage runs on a Docker Hardened Image
+(`dhi.io/debian-base:trixie-dev`, the base the sandbox-kit-spec RECIPES.md
+recommends for a mixin overlay). Nothing from it ships in the kit (the final
+stage is `scratch` and copies only the `docker-scout` binary), so this is about
+supply-chain hygiene of the build, not the delivered artifact. Because it pulls
+from dhi.io, run `docker login dhi.io` before building, or override the builder
+with a public base via `--build-arg BUILDER_IMAGE=debian:trixie-slim`.
+
 Validate and build locally:
 
 ```sh
+docker login dhi.io          # the build stage pulls a DHI base
+
 # Preview how the kit resolves.
 sbx kit inspect .
 
